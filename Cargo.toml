@@ -5,6 +5,7 @@ version = "1.2.0"
 edition = "2021"
 
 [lib]
+name = "doukutsu_rs"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]

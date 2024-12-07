@@ -2,7 +2,7 @@
 
 # d-rs-libretro
 
-This is the libretro buildbot-ready version of [doukutsu-rs-nm (retroarch branch)](https://github.com/DrGlaucous/doukutsu-rs-nm/tree/retroarch-dev). It splits the retroarch interface away from the doukutsu-rs backend so that can be kept up to date more easily. This is basically just a standalone copy of the `drsretroarch` folder in the main repo.
+This is the libretro buildbot-ready version of [doukutsu-rs-nm (retroarch branch)](https://github.com/DrGlaucous/doukutsu-rs-nm/tree/retroarch-dev) *(which is itself is a fork of [doukustu-rs](https://github.com/doukutsu-rs/doukutsu-rs))*. It splits the retroarch interface away from the doukutsu-rs backend so it can be kept up to date more easily. This is basically just a standalone copy of the `drsretroarch` folder in the main repo.
 
 That said, here's the rest of the readme from that branch:
 
