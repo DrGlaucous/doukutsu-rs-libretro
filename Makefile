@@ -9,12 +9,13 @@ system:
 	make rename-files release-path=${release-path}
 
 #trims leading "lib" off built files. Must be done in seperate command to make sure none of it executes before "system" is finished
+#			newname=$$(basename "$$file" | sed 's/^lib\(.*\)/\1_libretro/');
 rename-files:
 	$(eval FILES := $(wildcard $(release-path)/lib*))
 
 	@for file in ${FILES}; do \
 		if [ -e "$$file" ]; then \
-			newname=$$(basename "$$file" | sed 's/^lib\(.*\)$/\1_libretro'); \
+			newname=$$(echo "$$(basename $$file)" | sed 's/^lib\(.*\)\(\.[^.]*\)/\1_libretro\2/'); \
 			mv "$$file" "$(release-path)/$$newname"; \
 			echo "Renamed: $$file -> $(release-path)/$$newname"; \
 		fi; \
