@@ -617,26 +617,9 @@ pub mod log {
         //convert string to CStr (ensures we have a trailing null terminator)
         let output = unsafe{std::ffi::CStr::from_ptr(message.as_str().as_ptr() as *const _)};
 
-
-        // let bib = ["a", "b"].join("");
-        // let aah = unsafe {
-        //      std::ffi::CStr::from_ptr(("apples\n").as_ptr() as  *const _)
-        // };
-        // let aa: [i8; 4] = [0x25, 0x73, 0x0A, 0x00]; //%s\n
-        // let bb: [i8; 4] = [0x6F, 0x6E, 0x65, 0x00]; //one \0 (this works!)
-
         unsafe {
-            //STATIC_LOG(lvl, format.as_ptr() as *const _, cstr);
             STATIC_LOG(lvl, output.as_ptr() as *const _);
         }
-
-
-        // //test: we get undefined behavior out of this when used with apple silicon
-        // unsafe {
-        //     STATIC_LOG(Level::Info, "%s\\n\\0", )
-        // }
-
-
     }
 
 }
