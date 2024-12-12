@@ -641,7 +641,7 @@ pub mod log {
     pub fn log(lvl: Level, msg: &str) {
         // Make sure the message ends in a \n, mandated by the
         // libretro API. (otherwise the next line will not be offset down, which looks bad)
-        let message = format!("{}\n", msg);
+        let message = format!("{}\n\0", msg);
         //convert string to CStr (ensures we have a trailing null terminator)
         let output = unsafe{CStr::from_ptr(message.as_str().as_ptr() as *const _)};
 
