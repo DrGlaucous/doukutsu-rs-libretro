@@ -24,7 +24,7 @@ rename-files:
 
 
 all-apple:
-	make ios system
+	make ios tvos system
 
 all-linux:
 	make android system
@@ -38,8 +38,16 @@ ios:
 	codesign -s - ${release-path}/doukutsu_rs_libretro.dylib
 	codesign -d -v ${release-path}/doukutsu_rs_libretro.dylib
 
+#cargo-lipo doesn't support appleTV, so we use the nighly build command
+tvos: release-path = ./target/aarch64-apple-tvos/release
+tvos:
+	cargo +nightly build -Z build-std --target=aarch64-apple-tvos --release
+	mv ${release-path}/libdoukutsu_rs.dylib ${release-path}/doukutsu_rs_libretro.dylib
+	codesign -s - ${release-path}/doukutsu_rs_libretro.dylib
+	codesign -d -v ${release-path}/doukutsu_rs_libretro.dylib
 
-#ditto, but for android ndk
+
+#same as ios target, but for android ndk
 android:
 	rustup target add aarch64-linux-android
 	rustup target add armv7-linux-androideabi
