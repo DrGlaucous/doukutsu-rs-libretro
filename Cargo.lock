@@ -276,6 +276,7 @@ dependencies = [
 [[package]]
 name = "doukutsu-rs"
 version = "0.101.0"
+source = "git+https://github.com/DrGlaucous/doukutsu-rs-nm.git?branch=retroarch-dev#cb930709225053aec7f02d8acba17985e75cc4a5"
 dependencies = [
  "byteorder",
  "case_insensitive_hashmap",
