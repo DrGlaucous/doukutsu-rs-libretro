@@ -11,6 +11,6 @@ crate-type = ["staticlib", "cdylib"]
 [dependencies]
 libc = "0.2"
 log = "0.4"
-doukutsu-rs = { git = "https://github.com/DrGlaucous/doukutsu-rs-nm.git", rev = "6a73937039de3188d9067c5c8da350cb2adb98d1", default-features = false, features = ["default-base", "backend-libretro"]}
+doukutsu-rs = { git = "https://github.com/DrGlaucous/doukutsu-rs-nm.git", rev = "720a80295c75275cdb37581091454dcbbe7c5e8d", default-features = false, features = ["default-base", "backend-libretro"]}
 
 

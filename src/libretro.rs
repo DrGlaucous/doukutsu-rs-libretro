@@ -887,7 +887,7 @@ pub mod retro_filesystem_context {
 
 
 
-    #[derive(Clone, Copy, PartialEq, Eq)]
+    #[derive(Clone, Copy)]
     #[repr(C)]
     pub struct VFSInterface {
         vfs_get_path: GetPathFn,
