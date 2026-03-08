@@ -1622,7 +1622,6 @@ pub extern "C" fn retro_load_game(info: *const GameInfo) -> bool {
 
     if info.path.is_null() {
         rlog::warn!("No path in GameInfo!");
-        //warn!("No path in GameInfo!");
         return false;
     }
 
@@ -1634,15 +1633,24 @@ pub extern "C" fn retro_load_game(info: *const GameInfo) -> bool {
             None => return false,
         };
 
-    match core::load_game(path) {
-        Some(c) => {
+    // Catch panics to prevent undefined behavior at the FFI boundary
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        core::load_game(path)
+    }));
+
+    match result {
+        Ok(Some(c)) => {
             unsafe {
                 set_context(c);
             }
             true
         }
-        None => {
+        Ok(None) => {
             rlog::warn!("Couldn't load game!");
+            false
+        }
+        Err(_) => {
+            rlog::warn!("Panic during game loading!");
             false
         }
     }
