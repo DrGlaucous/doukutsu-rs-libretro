@@ -132,15 +132,14 @@ libretro_variables!(
 
 /////////////////////CORE IMPL
 
-struct Core<'a>  {
+struct Core {
     //runner backend and other loop pointers are in here
 	_backend: Box<LibretroBackend>,
 	event_loop: Box<LibretroEventLoop>,
-    ////data_path: PathBuf,
 
-    state_ref: &'a mut SharedGameState,
+    state_ptr: *mut SharedGameState,
     pub game: Pin<Box<Game>>,
-    pub context: Pin<Box<Context>>,	
+    pub context: Pin<Box<Context>>,
     screen_width: u32,
     screen_height: u32,
 
@@ -150,9 +149,8 @@ struct Core<'a>  {
     audio_runner: Runner, //object that containst the audio context
 }
 
-impl<'a>  Core<'a>  {
-
-    fn new(target: PathBuf) -> Result<Core<'a>, ()>{
+impl Core {
+    fn new(target: PathBuf) -> Result<Core, ()>{
 
         //initialize the hardware backends
 
@@ -287,8 +285,7 @@ impl<'a>  Core<'a>  {
             rlog::log(Level::Error, format!("Failed to create backend: {:?}", e).as_str());
         })?;
 
-
-        let state_ref = unsafe {&mut *game.state.get()};
+        let state_ptr = game.state.get();
 
         //set starting resolution:
         let scale_factor = CoreVariables::internal_upscale_factor();
@@ -300,7 +297,7 @@ impl<'a>  Core<'a>  {
             _backend: backend,
             event_loop,
             context,
-            state_ref,
+            state_ptr,
             game,
             screen_height: initial_height,
             screen_width: initial_width,
@@ -390,7 +387,7 @@ impl<'a>  Core<'a>  {
 
     #[allow(unused)]
     fn poll_touch(&mut self) {
-
+        let state = unsafe { &mut *self.state_ptr };
         let mut iterator = 0;
         while touchpad_analog_state(0, iterator, TouchpadAttribute::Pressed) != 0 {
 
@@ -401,7 +398,7 @@ impl<'a>  Core<'a>  {
 
             iterator += 1;
         }
-        self.event_loop.finalize_touchpad(&mut self.state_ref);
+        self.event_loop.finalize_touchpad(state);
 
     }
 
@@ -441,7 +438,7 @@ impl<'a>  Core<'a>  {
 
 
     fn set_resolution(&mut self) {
-
+        let state = unsafe { &mut *self.state_ptr };
         let initial_width = self.screen_width;
         let initial_height = self.screen_height;
 
@@ -457,7 +454,7 @@ impl<'a>  Core<'a>  {
         if height != initial_height || width != initial_width {
             let new_av_info = self.core_av_info();
             set_geometry(&new_av_info.geometry);
-            let _ = self.event_loop.handle_resize(&mut self.state_ref, &mut self.context, width, height);
+            let _ = self.event_loop.handle_resize(state, &mut self.context, width, height);
         }
 
     }
@@ -465,22 +462,22 @@ impl<'a>  Core<'a>  {
 }
 
 
-impl<'a>  libretro::Context  for Core<'a>  {
+impl libretro::Context for Core {
 
     fn render_frame(&mut self) {
-
+        let state = unsafe { &mut *self.state_ptr };
 
         self.poll_gamepad();
-        
+
         //(almost) implemented, but not completely as it isn't needed and I'm tired
         //self.poll_touch();
         //self.poll_keys();
 
-        self.event_loop.update(self.state_ref, self.game.as_mut().get_mut(), &mut self.context, self.delta_time as u64);
+        self.event_loop.update(state, self.game.as_mut().get_mut(), &mut self.context, self.delta_time as u64);
         gl_frame_done(self.screen_width, self.screen_height);
 
         //terminate with the ingame menu
-        if self.state_ref.shutdown {
+        if state.shutdown {
             request_shutdown();
         }
 
@@ -499,19 +496,16 @@ impl<'a>  libretro::Context  for Core<'a>  {
 
     //settings have been changed, update them inside the game
     fn refresh_variables(&mut self){
-        //let result = parse_ratio("16:9 (widescreen)");
-
-        //let internal_upscale_factor = CoreVariables::internal_upscale_factor();
-        //let screen_ratio = CoreVariables::screen_ratio();
         self.set_resolution();
+        let state = unsafe { &mut *self.state_ptr };
 
-        self.state_ref.settings.god_mode = CoreVariables::god_mode();
-        self.state_ref.settings.fps_counter = CoreVariables::show_fps();
-        self.state_ref.settings.infinite_booster = CoreVariables::infinite_booster();
-        self.state_ref.settings.debug_outlines = CoreVariables::draw_debug_outlines();
-        self.state_ref.settings.noclip = CoreVariables::noclip();
-        self.state_ref.debugger = CoreVariables::show_debug_window();
-        self.state_ref.more_rust = CoreVariables::more_rust();
+        state.settings.god_mode = CoreVariables::god_mode();
+        state.settings.fps_counter = CoreVariables::show_fps();
+        state.settings.infinite_booster = CoreVariables::infinite_booster();
+        state.settings.debug_outlines = CoreVariables::draw_debug_outlines();
+        state.settings.noclip = CoreVariables::noclip();
+        state.debugger = CoreVariables::show_debug_window();
+        state.more_rust = CoreVariables::more_rust();
 
 
 
@@ -520,18 +514,21 @@ impl<'a>  libretro::Context  for Core<'a>  {
 
     //soft-reset (gl is not re-initialized, send game back to top menu)
     fn reset(&mut self) {
-        self.state_ref.next_scene = Some(Box::new(title_scene::TitleScene::new()));
+        let state = unsafe { &mut *self.state_ptr };
+        state.next_scene = Some(Box::new(title_scene::TitleScene::new()));
     }
 
     //gl context was destroyed, now rebuild it (called when game is initialized).
     fn gl_context_reset(&mut self){
-        let _ = self.event_loop.rebuild_renderer(self.state_ref, &mut self.context, self.screen_width, self.screen_height);
+        let state = unsafe { &mut *self.state_ptr };
+        let _ = self.event_loop.rebuild_renderer(state, &mut self.context, self.screen_width, self.screen_height);
     }
 
     //called when frontend window resolution is changed,
     //the gl context is about to be destroyed, remove anything from the back while you can
     fn gl_context_destroy(&mut self){
-         let _ = self.event_loop.destroy_renderer(&mut self.state_ref, &mut self.context);
+        let state = unsafe { &mut *self.state_ptr };
+        let _ = self.event_loop.destroy_renderer(state, &mut self.context);
     }
 
     //how long since the last frame was called
@@ -549,13 +546,14 @@ impl<'a>  libretro::Context  for Core<'a>  {
 
     //used to change or set controller mappings
     fn set_controller_port_device(&mut self, port: u32, controller_type: InputDevice) {
-
+        let state = unsafe { &mut *self.state_ptr };
+        let rumble_enabled = self.rumble_enabled;
         match controller_type {
             InputDevice::JoyPad => {
 
                 //assign the joypad to the backend
-                self.event_loop.add_gamepad(self.state_ref, &mut self.context, port, 
-                    if self.rumble_enabled {Some(joypad_rumble_context::set_rumble)} else {None}
+                self.event_loop.add_gamepad(state, &mut self.context, port,
+                    if rumble_enabled {Some(joypad_rumble_context::set_rumble)} else {None}
                 );
 
                 //set up user-readable joypad mappings (might be optional since these IDs can also be set ingame, making the ones here invalid.)
