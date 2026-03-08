@@ -271,14 +271,22 @@ impl<'a>  Core<'a>  {
             audio_config: sound_config,
         };
 
-		let (game, context) = doukutsu_rs::game::init(options).unwrap();
+		let (game, context) = doukutsu_rs::game::init(options).map_err(|e| {
+            rlog::log(Level::Error, format!("Failed to initialize game: {:?}", e).as_str());
+        })?;
 
-		let mut context = context.unwrap();
-		let mut game = game.unwrap();
+		let mut context = context.ok_or_else(|| {
+            rlog::log(Level::Error, "Game init returned no context");
+        })?;
+		let mut game = game.ok_or_else(|| {
+            rlog::log(Level::Error, "Game init returned no game");
+        })?;
 		let game_ptr = game.as_mut().get_mut();
 
+		let (backend, event_loop) = context.create_backend(game_ptr, get_current_framebuffer, get_proc_address, render_mode).map_err(|e| {
+            rlog::log(Level::Error, format!("Failed to create backend: {:?}", e).as_str());
+        })?;
 
-		let (backend, event_loop) = context.create_backend(game_ptr, get_current_framebuffer, get_proc_address, render_mode).unwrap();
 
         let state_ref = unsafe {&mut *game.state.get()};
 
@@ -299,7 +307,9 @@ impl<'a>  Core<'a>  {
             rumble_enabled,
             _async_audio_enabled: async_audio_enabled,
             delta_time: 0,
-            audio_runner: audio_runner.unwrap(),
+            audio_runner: audio_runner.ok_or_else(|| {
+                rlog::log(Level::Error, "Audio runner was not initialized");
+            })?,
 
             ////data_path: data.clone().to_path_buf(), 
         };
