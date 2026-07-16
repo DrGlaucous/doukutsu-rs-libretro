@@ -23,6 +23,10 @@ include:
     file: '/rust-android-jni.yml'
     
   #################################### MISC ##################################
+  # webOS
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/rust-webos.yml'
+
   # Stages for building
 stages:
   - build-prepare
@@ -91,4 +95,10 @@ libretro-build-ios-arm64:
 libretro-build-tvos-arm64:
   extends:
     - .libretro-rust-tvos-arm64-default
+    - .core-defs
+
+# webOS
+libretro-build-webos-armv7a:
+  extends:
+    - .libretro-rust-webos-armv7a-default
     - .core-defs
